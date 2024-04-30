@@ -1,7 +1,6 @@
 from datasets import load_dataset
 from dotenv import dotenv_values
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerAPI
+import pymongo
 import os
 import pandas as pd
 import openai
@@ -49,19 +48,33 @@ def get_embedding(text):
     except Exception as e:
         print(f"Error in get_embedding: {e}")
         return None
+
+def get_mongo_client(mongo_uri):
+    """Establish connection to the MongoDB."""
+    try:
+        #Create a new client and connect to the server
+        mdb_client = pymongo.MongoClient(mongo_uri)
+        print("Pinged your deployment. You successfully connected to MongoDB")
+        return mdb_client
+    except pymongo.errors.ConnectionFailure as e:
+        print(f"Connection failed: {e}")
     
+
 #dataset_df["plot_embedding_optimised"] = dataset_df['plot'].apply(get_embedding)
 dataset_df["plot_embedding_optimised"] = dataset_df_embedded_values['plot_embedding']
 
-atlas_uri = loaded_secrets["ATLAS_URI"]
+mongo_uri = loaded_secrets["ATLAS_URI"]
+if not mongo_uri:
+    print("ATLAS_URI not set in environment variables")
 
-#Create a new client and connect to the server
-mdb_client = MongoClient(atlas_uri, ServerAPI=ServerApi('1'))
+mdb_client = get_mongo_client(mongo_uri)
 
-#Send a ping to confirm a successfull connection
-try:
-    mdb_client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB")
-except Exception as e:
-    print(e)
+#Ingest data into MongoDB
+db = mdb_client['movies_embedded']
+collection = db['movie_collection']
+
+documents = dataset_df.to_dict('records')
+collection.insert_many(documents)
+
+print("Data ingestion into MongoDB completed")
 
