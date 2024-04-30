@@ -6,8 +6,6 @@ import os
 import pandas as pd
 import openai
 
-
-
 # <https://huggingface.co/datasets/AIatMongoDB/embedded_movies>
 dataset = load_dataset("AIatMongoDB/embedded_movies")
 
@@ -54,4 +52,16 @@ def get_embedding(text):
     
 #dataset_df["plot_embedding_optimised"] = dataset_df['plot'].apply(get_embedding)
 dataset_df["plot_embedding_optimised"] = dataset_df_embedded_values['plot_embedding']
-print(dataset_df.head()['plot_embedding_optimised'])
+
+atlas_uri = loaded_secrets["ATLAS_URI"]
+
+#Create a new client and connect to the server
+mdb_client = MongoClient(atlas_uri, ServerAPI=ServerApi('1'))
+
+#Send a ping to confirm a successfull connection
+try:
+    mdb_client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB")
+except Exception as e:
+    print(e)
+
