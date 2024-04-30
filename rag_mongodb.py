@@ -42,9 +42,9 @@ def get_embedding(text):
 
     try:
         # Call OpenAI API to get the embedding
-        # embedding = openai.embeddings.create(input=text, model=EMBEDDING_MODEL).data[0].embedding
-        # return embedding
-        print("Simulating the request to OPENAI")
+        embedding = openai.embeddings.create(input=text, model=EMBEDDING_MODEL).data[0].embedding
+        print("Embedded completed")
+        return embedding
     except Exception as e:
         print(f"Error in get_embedding: {e}")
         return None
@@ -82,7 +82,6 @@ def vector_search(user_query, collection):
         {
             "$project": {
                 "_id": 0,  # Exclude the _id field
-                "plot_embedding_opitimzed": 0,  # Exclude the plot_embedding_opitimzed field
                 "plot": 1,  # Include the plot field
                 "title": 1,  # Include the title field
                 "genres": 1, # Include the genres field
@@ -97,6 +96,28 @@ def vector_search(user_query, collection):
     results = collection.aggregate(pipeline)
     return list(results)
 
+# Embeds the user's query and uses GPT-3.5 to generate context-aware responses
+def handle_user_query(query, collection):
+
+  get_knowledge = vector_search(query, collection)
+
+  search_result = ''
+  for result in get_knowledge:
+      print("Dentro del For")
+      search_result += f"Title: {result.get('title', 'N/A')}, Plot: {result.get('plot', 'N/A')}\\n"
+
+  print("Search Result: ")
+  print(search_result)
+  completion = openai.chat.completions.create(
+      model="gpt-3.5-turbo",
+      messages=[
+          {"role": "system", "content": "You are a movie recommendation system."},
+          {"role": "user", "content": "Answer this user query: " + query + " with the following context: " + search_result}
+      ]
+  )
+
+  return (completion.choices[0].message.content), search_result
+
 #Set a valid MongoDB connection
 def get_mongo_client(mongo_uri):
     """Establish connection to the MongoDB."""
@@ -108,22 +129,39 @@ def get_mongo_client(mongo_uri):
     except pymongo.errors.ConnectionFailure as e:
         print(f"Connection failed: {e}")
     
+################################################
+###This part embeds the data using OpenAI API###
+################################################
 
 #dataset_df["plot_embedding_optimised"] = dataset_df['plot'].apply(get_embedding)
-dataset_df["plot_embedding_optimised"] = dataset_df_embedded_values['plot_embedding']
+#dataset_df["plot_embedding_optimised"] = dataset_df_embedded_values['plot_embedding']
+
+
+##################################################
+#####This part loads the data to MongoDB Atlas####
+##################################################
 
 mongo_uri = loaded_secrets["ATLAS_URI"]
 if not mongo_uri:
     print("ATLAS_URI not set in environment variables")
 
 mdb_client = get_mongo_client(mongo_uri)
-
-#Ingest data into MongoDB
 db = mdb_client['movies_embedded']
 collection = db['movie_collection']
 
-documents = dataset_df.to_dict('records')
-collection.insert_many(documents)
+# #Ingest data into MongoDB
+# documents = dataset_df.to_dict('records')
+# collection.insert_many(documents)
 
-print("Data ingestion into MongoDB completed")
+# print("Data ingestion into MongoDB completed")
 
+
+#########################################
+#Conduct query with retrieval of sources#
+#########################################
+
+query = "What is the best movie to watch with my girlfriend?"
+response, source_information = handle_user_query(query, collection)
+
+print(f"Response: {response}")
+print(f"Source Information: {source_information}")
