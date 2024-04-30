@@ -24,8 +24,7 @@ dataset_df = dataset_df.drop(columns=['plot_embedding'])
 print(dataset_df.head()['plot'])
 
 #Importing OpenAI apikey
-# loaded_secrets = dotenv_values(".env")
-# openai.api_key = loaded_secrets["API_KEY"]
+
 
 #Selecting the OpenAI embedding model
 EMBEDDING_MODEL = "text-embedding-3-small"
