@@ -1,4 +1,6 @@
 from datasets import load_dataset
+from dotenv import load_dotenv
+import os
 import pandas as pd
 import openai
 
@@ -21,7 +23,8 @@ dataset_df = dataset_df.drop(columns=['plot_embedding'])
 print(dataset_df.head()['plot'])
 
 #Importing OpenAI apikey
-openai.api_key = "sk-proj-RytM2MME8IFK8bcraifZT3BlbkFJM3Iuc0d63PlLYgo2pFAa"
+loaded_secrets = load_dotenv(".env")
+openai.api_key = loaded_secrets["API_KEY"]
 
 #Selecting the OpenAI embedding model
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -43,4 +46,4 @@ def get_embedding(text):
         return None
     
 dataset_df["plot_embedding_optimised"] = dataset_df['plot'].apply(get_embedding)
-print(dataset_df.head()['plot_embedding_optimised'])
+print(dataset_df.head()['plot_embedding_optimised'])    
