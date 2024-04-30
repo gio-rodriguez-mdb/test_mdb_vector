@@ -1,8 +1,12 @@
 from datasets import load_dataset
 from dotenv import dotenv_values
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerAPI
 import os
 import pandas as pd
 import openai
+
+
 
 # <https://huggingface.co/datasets/AIatMongoDB/embedded_movies>
 dataset = load_dataset("AIatMongoDB/embedded_movies")
