@@ -48,7 +48,56 @@ def get_embedding(text):
     except Exception as e:
         print(f"Error in get_embedding: {e}")
         return None
+    
+#Vector Search Function
+def vector_search(user_query, collection):
+    """
+    Performs a vector search in the MongoDB collection based on the user query.
 
+    Args:
+    user_query (str): The user's query string.
+    collection (MongoCollection): The MongoDB collection to search.
+
+    Returns:
+    list: A list of matching documents.
+    """
+
+    # Generate embedding for the user query
+    query_embedding = get_embedding(user_query)
+
+    if query_embedding is None:
+        return "Invalid query or embedding generation failed."
+    
+    #Define the vector search pipeline for the aggregation operation
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": "vector_index",
+                "queryVector": query_embedding,
+                "path": "plot_embedding_optimised",
+                "numCandidates": 150,  # Number of candidate matches to consider
+                "limit": 5  # Return top 5 matches
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,  # Exclude the _id field
+                "plot_embedding_opitimzed": 0,  # Exclude the plot_embedding_opitimzed field
+                "plot": 1,  # Include the plot field
+                "title": 1,  # Include the title field
+                "genres": 1, # Include the genres field
+                "score": {
+                    "$meta": "vectorSearchScore"  # Include the search score
+                }
+            }
+        }
+    ]
+
+    # Execute the search
+    results = collection.aggregate(pipeline)
+    return list(results)
+
+#Set a valid MongoDB connection
 def get_mongo_client(mongo_uri):
     """Establish connection to the MongoDB."""
     try:
