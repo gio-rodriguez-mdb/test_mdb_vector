@@ -103,7 +103,6 @@ def handle_user_query(query, collection):
 
   search_result = ''
   for result in get_knowledge:
-      print("Dentro del For")
       search_result += f"Title: {result.get('title', 'N/A')}, Plot: {result.get('plot', 'N/A')}\\n"
 
   print("Search Result: ")
